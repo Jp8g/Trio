@@ -1,4 +1,3 @@
-#include <math.h>
 #define DR_WAV_IMPLEMENTATION
 
 #include "../include/trio/audio.h"
@@ -83,7 +82,7 @@ void TrioStartAudioDevice(TrioAudioDevice* device) {
 TrioAudioStream* TrioLoadWav(const char* path) {
     drwav wav;
     if (!drwav_init_file(&wav, path, NULL)) {
-        TrioLog(ERROR, "Path not found");
+        TrioLog(__func__, TRIO_ERROR, "Failed to initialise WAV file \"%s\" from working directory \"%s\"", path, getcwd(NULL, 0));
         return NULL;
     }
 
