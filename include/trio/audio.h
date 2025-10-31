@@ -15,12 +15,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-typedef struct TrioAudioStream {
+typedef struct TrioAudioBuffer {
     float* data;
-    double pos;
     uint32_t frameCount;
-    uint32_t sampleRate;
     uint32_t channels;
+    uint32_t sampleRate;
+} TrioAudioBuffer;
+
+typedef struct TrioAudioStream {
+    struct TrioAudioBuffer* buffer;
+    double pos;
 } TrioAudioStream;
 
 typedef struct TrioMixer {
@@ -40,7 +44,8 @@ extern "C" {
 
 TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity);
 void TrioStartAudioDevice(TrioAudioDevice* device);
-TrioAudioStream* TrioLoadWav(const char* path);
+TrioAudioBuffer* TrioLoadWav(const char* path);
+TrioAudioStream* TrioCreateAudioStream(TrioAudioBuffer* buffer);
 void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
 void TrioCloseAudioDevice(TrioAudioDevice* device);
 

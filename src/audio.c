@@ -13,29 +13,32 @@ void DataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint
 
         TrioAudioStream* audioStream = mixer->streams[streamIndex];
         double streamPosition = audioStream->pos;
-        uint32_t streamFrameCount = audioStream->frameCount;
+        uint32_t streamFrameCount = audioStream->buffer->frameCount;
 
-        double streamPositionStep = (double)audioStream->sampleRate / pDevice->sampleRate;
+        double streamPositionStep = (double)audioStream->buffer->sampleRate / pDevice->sampleRate;
 
         for (uint32_t frame = 0; frame < frameCount; frame++) {
 
             if (streamPosition >= streamFrameCount) break;
 
-            uint32_t streamPositionFloor = fmin(floor(streamPosition), audioStream->frameCount - 1);
+            uint32_t streamPositionFloor = (uint32_t)streamPosition;
+            if (streamPositionFloor >= audioStream->buffer->frameCount - 1)
+                streamPositionFloor = audioStream->buffer->frameCount - 1;
+            
             double weightToNextSample = streamPosition - (double)streamPositionFloor;
 
             for (uint32_t channel = 0; channel < pDevice->playback.channels; channel++) {
                 uint32_t dataIndex = streamPositionFloor;
 
-                if (audioStream->channels != 1) dataIndex = streamPositionFloor * audioStream->channels + channel;
+                if (audioStream->buffer->channels != 1) dataIndex = streamPositionFloor * audioStream->buffer->channels + channel;
 
                 uint32_t nextFramePosition = streamPositionFloor + 1;
 
                 if (nextFramePosition >= streamFrameCount) nextFramePosition = streamFrameCount - 1;
 
-                uint32_t nextSampleIndex = nextFramePosition * audioStream->channels + channel;
+                uint32_t nextSampleIndex = nextFramePosition * audioStream->buffer->channels + channel;
 
-                float interpolatedSample = (audioStream->data[dataIndex] * (1 - weightToNextSample)) + (audioStream->data[nextSampleIndex] * weightToNextSample);
+                float interpolatedSample = (audioStream->buffer->data[dataIndex] * (1 - weightToNextSample)) + (audioStream->buffer->data[nextSampleIndex] * weightToNextSample);
 
                 out[frame * pDevice->playback.channels + channel] += interpolatedSample;
             }
@@ -79,34 +82,55 @@ void TrioStartAudioDevice(TrioAudioDevice* device) {
     ma_device_start(&device->device);
 }
 
-TrioAudioStream* TrioLoadWav(const char* path) {
+TrioAudioBuffer* TrioLoadWav(const char* path) {
     drwav wav;
     if (!drwav_init_file(&wav, path, NULL)) {
-        TrioLog(__func__, TRIO_ERROR, "Failed to initialise WAV file \"%s\" from working directory \"%s\"", path, getcwd(NULL, 0));
+
+        char* workingDirectory = getcwd(NULL, 0);
+
+        TrioLog(__func__, TRIO_ERROR, "Failed to initialise WAV file \"%s\" from working directory \"%s\"", path, workingDirectory);
+
+        free(workingDirectory);
+
         return NULL;
     }
 
-    TrioAudioStream* stream = (TrioAudioStream*)malloc(sizeof(TrioAudioStream));
-    stream->frameCount = wav.totalPCMFrameCount;
-    stream->pos = 0;
-    stream->channels = wav.channels;
-    stream->sampleRate = wav.sampleRate;
+    TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
+    buffer->frameCount = wav.totalPCMFrameCount;
+    buffer->channels = wav.channels;
+    buffer->sampleRate = wav.sampleRate;
 
-    stream->data = malloc(sizeof(float) * wav.totalPCMFrameCount * wav.channels);
-    if (!stream->data) {
-        free(stream);
+    buffer->data = malloc(sizeof(float) * wav.totalPCMFrameCount * wav.channels);
+    if (!buffer->data) {
+        free(buffer);
         drwav_uninit(&wav);
         return NULL;
     }
 
-    size_t numberOfSamplesActuallyDecoded = drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, stream->data);
+    size_t numberOfSamplesActuallyDecoded = drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, buffer->data);
 
     drwav_uninit(&wav);
+
+    return buffer;
+}
+
+TrioAudioStream* TrioCreateAudioStream(TrioAudioBuffer* buffer) {
+    TrioAudioStream* stream = malloc(sizeof(TrioAudioStream));
+
+    stream->buffer = buffer;
+    stream->pos = 0;
 
     return stream;
 }
 
 void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream) {
+    for (uint32_t i = 0; i < device->mixer.count; i++) {
+        if (device->mixer.streams[i] == audioStream) {
+            TrioLog(__func__, TRIO_ERROR, "Cannot add the same TrioAudioStream* twice, consider creating a new second TrioAudioStream* with the same TrioAudioBuffer* instead");
+            return;
+        }
+    }
+
     if (device->mixer.count >= device->mixer.capacity) {
         device->mixer.capacity *= 2;
         TrioAudioStream** temp = realloc(device->mixer.streams, device->mixer.capacity * sizeof(TrioAudioStream*));
@@ -125,10 +149,6 @@ void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream
 void TrioCloseAudioDevice(TrioAudioDevice* device)
 {
     ma_device_uninit(&device->device);
-
-    for (uint32_t i = 0; i < device->mixer.count; i++) {
-        free(device->mixer.streams[i]);
-    }
 
     free(device->mixer.streams);
     free(device);
