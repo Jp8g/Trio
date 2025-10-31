@@ -1,3 +1,6 @@
+#include <math.h>
+#define DR_WAV_IMPLEMENTATION
+
 #include "../include/trio/audio.h"
 
 void DataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
@@ -5,34 +8,43 @@ void DataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint
 
     float* out = (float*)pOutput;
 
-    Mixer* mixer = &((TrioAudioDevice*)pDevice->pUserData)->mixer;
+    TrioMixer* mixer = &((TrioAudioDevice*)pDevice->pUserData)->mixer;
 
     for (uint32_t streamIndex = 0; streamIndex < mixer->count; streamIndex++) {
 
-        AudioStream* audioStream = mixer->streams[streamIndex];
-        uint64_t streamPosition = audioStream->pos;
-        uint64_t streamFrameCount = audioStream->frameCount;
+        TrioAudioStream* audioStream = mixer->streams[streamIndex];
+        double streamPosition = audioStream->pos;
+        uint32_t streamFrameCount = audioStream->frameCount;
+
+        double streamPositionStep = (double)audioStream->sampleRate / pDevice->sampleRate;
 
         for (uint32_t frame = 0; frame < frameCount; frame++) {
-            if (streamPosition >= streamFrameCount) {
-                if (audioStream->loop) {
-                    streamPosition = 0;
-                } else {
-                    break;
-                }
-            }
+
+            if (streamPosition >= streamFrameCount) break;
+
+            uint32_t streamPositionFloor = fmin(floor(streamPosition), audioStream->frameCount - 1);
+            double weightToNextSample = streamPosition - (double)streamPositionFloor;
 
             for (uint32_t channel = 0; channel < pDevice->playback.channels; channel++) {
-                uint64_t dataIndex = streamPosition;
+                uint32_t dataIndex = streamPositionFloor;
 
-                if (audioStream->channels != 1) dataIndex = streamPosition * audioStream->channels + channel;
+                if (audioStream->channels != 1) dataIndex = streamPositionFloor * audioStream->channels + channel;
 
-                out[frame * pDevice->playback.channels + channel] += audioStream->data[dataIndex];
+                uint32_t nextFramePosition = streamPositionFloor + 1;
+
+                if (nextFramePosition >= streamFrameCount) nextFramePosition = streamFrameCount - 1;
+
+                uint32_t nextSampleIndex = nextFramePosition * audioStream->channels + channel;
+
+                float interpolatedSample = (audioStream->data[dataIndex] * (1 - weightToNextSample)) + (audioStream->data[nextSampleIndex] * weightToNextSample);
+
+                out[frame * pDevice->playback.channels + channel] += interpolatedSample;
             }
             
-            streamPosition += 1;
-            audioStream->pos = streamPosition;
+            streamPosition += streamPositionStep;
         }
+
+        audioStream->pos = streamPosition;
     }
 }
 
@@ -43,7 +55,7 @@ TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity) {
     if (device != NULL) {
         device->mixer.capacity = initialMixerStreamCapacity;
         device->mixer.count = 0;
-        device->mixer.streams = malloc(initialMixerStreamCapacity * sizeof(AudioStream*));
+        device->mixer.streams = malloc(initialMixerStreamCapacity * sizeof(TrioAudioStream*));
     }
 
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
@@ -68,10 +80,37 @@ void TrioStartAudioDevice(TrioAudioDevice* device) {
     ma_device_start(&device->device);
 }
 
-void TrioAddStreamToDevice(TrioAudioDevice* device, AudioStream* audioStream) {
+TrioAudioStream* TrioLoadWav(const char* path) {
+    drwav wav;
+    if (!drwav_init_file(&wav, path, NULL)) {
+        TrioLog(ERROR, "Path not found");
+        return NULL;
+    }
+
+    TrioAudioStream* stream = (TrioAudioStream*)malloc(sizeof(TrioAudioStream));
+    stream->frameCount = wav.totalPCMFrameCount;
+    stream->pos = 0;
+    stream->channels = wav.channels;
+    stream->sampleRate = wav.sampleRate;
+
+    stream->data = malloc(sizeof(float) * wav.totalPCMFrameCount * wav.channels);
+    if (!stream->data) {
+        free(stream);
+        drwav_uninit(&wav);
+        return NULL;
+    }
+
+    size_t numberOfSamplesActuallyDecoded = drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, stream->data);
+
+    drwav_uninit(&wav);
+
+    return stream;
+}
+
+void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream) {
     if (device->mixer.count >= device->mixer.capacity) {
         device->mixer.capacity *= 2;
-        AudioStream** temp = realloc(device->mixer.streams, device->mixer.capacity * sizeof(AudioStream*));
+        TrioAudioStream** temp = realloc(device->mixer.streams, device->mixer.capacity * sizeof(TrioAudioStream*));
         if (temp) {
             device->mixer.streams = temp;
         }
@@ -96,7 +135,7 @@ void TrioCloseAudioDevice(TrioAudioDevice* device)
     free(device);
 }
 
-const char* TrioResultToString(ma_result result)
+const char* MAResultToString(ma_result result)
 {
     switch(result) {
         case MA_SUCCESS: return "MA_SUCCESS";

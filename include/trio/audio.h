@@ -7,28 +7,30 @@
 #define MA_DEBUG_OUTPUT
 
 #include "../../external/miniaudio/miniaudio.h"
+#include "../../external/dr-libs/dr_wav.h"
+#include "log.h"
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct AudioStream {
+typedef struct TrioAudioStream {
     float* data;
-    uint64_t frameCount;
-    uint64_t pos;
+    double pos;
+    uint32_t frameCount;
+    uint32_t sampleRate;
     uint32_t channels;
-    float volume;
-    bool loop;
-} AudioStream;
+} TrioAudioStream;
 
-typedef struct Mixer {
-    AudioStream** streams;
+typedef struct TrioMixer {
+    TrioAudioStream** streams;
     uint32_t count;
     uint32_t capacity;
-} Mixer;
+} TrioMixer;
 
 typedef struct TrioAudioDevice {
     ma_device device;
-    Mixer mixer;
+    TrioMixer mixer;
 } TrioAudioDevice;
 
 #ifdef __cplusplus
@@ -37,9 +39,9 @@ extern "C" {
 
 TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity);
 void TrioStartAudioDevice(TrioAudioDevice* device);
-void TrioAddStreamToDevice(TrioAudioDevice* device, AudioStream* audioStream);
+TrioAudioStream* TrioLoadWav(const char* path);
+void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
 void TrioCloseAudioDevice(TrioAudioDevice* device);
-const char* TrioResultToString(ma_result result);
 
 #ifdef __cplusplus
 }

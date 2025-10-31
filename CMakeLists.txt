@@ -12,6 +12,7 @@ add_library(engine STATIC
     src/audio.c
     src/graphics.c
     src/input.c
+    src/log.c
     src/window.c
 )
 
