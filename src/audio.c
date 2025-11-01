@@ -1,158 +1,8 @@
+#define DR_FLAC_IMPLEMENTATION
+#define DR_MP3_IMPLEMENTATION
 #define DR_WAV_IMPLEMENTATION
 
 #include "../include/trio/audio.h"
-
-void DataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
-    (void)pInput;
-
-    float* out = (float*)pOutput;
-
-    TrioMixer* mixer = &((TrioAudioDevice*)pDevice->pUserData)->mixer;
-
-    for (uint32_t streamIndex = 0; streamIndex < mixer->count; streamIndex++) {
-
-        TrioAudioStream* audioStream = mixer->streams[streamIndex];
-        double streamPosition = audioStream->pos;
-        uint32_t streamFrameCount = audioStream->buffer->frameCount;
-
-        double streamPositionStep = (double)audioStream->buffer->sampleRate / pDevice->sampleRate;
-
-        for (uint32_t frame = 0; frame < frameCount; frame++) {
-
-            if (streamPosition >= streamFrameCount) break;
-
-            uint32_t streamPositionFloor = (uint32_t)streamPosition;
-            if (streamPositionFloor >= audioStream->buffer->frameCount - 1)
-                streamPositionFloor = audioStream->buffer->frameCount - 1;
-            
-            double weightToNextSample = streamPosition - (double)streamPositionFloor;
-
-            for (uint32_t channel = 0; channel < pDevice->playback.channels; channel++) {
-                uint32_t dataIndex = streamPositionFloor;
-
-                if (audioStream->buffer->channels != 1) dataIndex = streamPositionFloor * audioStream->buffer->channels + channel;
-
-                uint32_t nextFramePosition = streamPositionFloor + 1;
-
-                if (nextFramePosition >= streamFrameCount) nextFramePosition = streamFrameCount - 1;
-
-                uint32_t nextSampleIndex = nextFramePosition * audioStream->buffer->channels + channel;
-
-                float interpolatedSample = (audioStream->buffer->data[dataIndex] * (1 - weightToNextSample)) + (audioStream->buffer->data[nextSampleIndex] * weightToNextSample);
-
-                out[frame * pDevice->playback.channels + channel] += interpolatedSample;
-            }
-            
-            streamPosition += streamPositionStep;
-        }
-
-        audioStream->pos = streamPosition;
-    }
-}
-
-TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity) {
-
-    struct TrioAudioDevice* device = calloc(1, sizeof(TrioAudioDevice));
-
-    if (device != NULL) {
-        device->mixer.capacity = initialMixerStreamCapacity;
-        device->mixer.count = 0;
-        device->mixer.streams = malloc(initialMixerStreamCapacity * sizeof(TrioAudioStream*));
-    }
-
-    ma_device_config config = ma_device_config_init(ma_device_type_playback);
-
-    config.playback.format   = ma_format_f32;
-    config.periodSizeInFrames= 256;
-    config.playback.channels = 2;
-    config.sampleRate        = 48000;
-    config.dataCallback      = DataCallback;
-    config.pUserData         = device;
-
-    if (ma_device_init(NULL, &config, &device->device) != MA_SUCCESS) {
-        free(device->mixer.streams);
-        free(device);
-        return NULL;
-    }
-
-    return device;
-}
-
-void TrioStartAudioDevice(TrioAudioDevice* device) {
-    ma_device_start(&device->device);
-}
-
-TrioAudioBuffer* TrioLoadWav(const char* path) {
-    drwav wav;
-    if (!drwav_init_file(&wav, path, NULL)) {
-
-        char* workingDirectory = getcwd(NULL, 0);
-
-        TrioLog(__func__, TRIO_ERROR, "Failed to initialise WAV file \"%s\" from working directory \"%s\"", path, workingDirectory);
-
-        free(workingDirectory);
-
-        return NULL;
-    }
-
-    TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
-    buffer->frameCount = wav.totalPCMFrameCount;
-    buffer->channels = wav.channels;
-    buffer->sampleRate = wav.sampleRate;
-
-    buffer->data = malloc(sizeof(float) * wav.totalPCMFrameCount * wav.channels);
-    if (!buffer->data) {
-        free(buffer);
-        drwav_uninit(&wav);
-        return NULL;
-    }
-
-    size_t numberOfSamplesActuallyDecoded = drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, buffer->data);
-
-    drwav_uninit(&wav);
-
-    return buffer;
-}
-
-TrioAudioStream* TrioCreateAudioStream(TrioAudioBuffer* buffer) {
-    TrioAudioStream* stream = malloc(sizeof(TrioAudioStream));
-
-    stream->buffer = buffer;
-    stream->pos = 0;
-
-    return stream;
-}
-
-void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream) {
-    for (uint32_t i = 0; i < device->mixer.count; i++) {
-        if (device->mixer.streams[i] == audioStream) {
-            TrioLog(__func__, TRIO_ERROR, "Cannot add the same TrioAudioStream* twice, consider creating a new second TrioAudioStream* with the same TrioAudioBuffer* instead");
-            return;
-        }
-    }
-
-    if (device->mixer.count >= device->mixer.capacity) {
-        device->mixer.capacity *= 2;
-        TrioAudioStream** temp = realloc(device->mixer.streams, device->mixer.capacity * sizeof(TrioAudioStream*));
-        if (temp) {
-            device->mixer.streams = temp;
-        }
-        else {
-            return;
-        }
-    }
-
-    device->mixer.streams[device->mixer.count] = audioStream;
-    device->mixer.count += 1;
-}
-
-void TrioCloseAudioDevice(TrioAudioDevice* device)
-{
-    ma_device_uninit(&device->device);
-
-    free(device->mixer.streams);
-    free(device);
-}
 
 const char* MAResultToString(ma_result result)
 {
@@ -231,4 +81,257 @@ const char* MAResultToString(ma_result result)
 
         default: return "Unknown";
     }
+}
+
+void DataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+    (void)pInput;
+
+    float* out = (float*)pOutput;
+
+    TrioMixer* mixer = &((TrioAudioDevice*)pDevice->pUserData)->mixer;
+
+    for (uint32_t streamIndex = 0; streamIndex < mixer->count; streamIndex++) {
+
+        TrioAudioStream* audioStream = mixer->streams[streamIndex];
+
+        if (!audioStream->playing) continue;
+
+        double streamPosition = audioStream->pos;
+        uint32_t streamFrameCount = audioStream->buffer->frameCount;
+
+        double streamPositionStep = (double)audioStream->buffer->sampleRate / pDevice->sampleRate;
+
+        for (uint32_t frame = 0; frame < frameCount; frame++) {
+
+            if (streamPosition >= streamFrameCount) break;
+
+            uint32_t streamPositionFloor = (uint32_t)streamPosition;
+            if (streamPositionFloor >= audioStream->buffer->frameCount - 1)
+                streamPositionFloor = audioStream->buffer->frameCount - 1;
+            
+            double weightToNextSample = streamPosition - (double)streamPositionFloor;
+
+            for (uint32_t channel = 0; channel < pDevice->playback.channels; channel++) {
+                uint32_t dataIndex = streamPositionFloor;
+
+                if (audioStream->buffer->channels != 1) dataIndex = streamPositionFloor * audioStream->buffer->channels + channel;
+
+                uint32_t nextFramePosition = streamPositionFloor + 1;
+
+                if (nextFramePosition >= streamFrameCount) nextFramePosition = streamFrameCount - 1;
+
+                uint32_t nextSampleIndex = nextFramePosition * audioStream->buffer->channels + channel;
+
+                float interpolatedSample = (audioStream->buffer->data[dataIndex] * (1 - weightToNextSample)) + (audioStream->buffer->data[nextSampleIndex] * weightToNextSample);
+
+                out[frame * pDevice->playback.channels + channel] += interpolatedSample;
+            }
+            
+            streamPosition += streamPositionStep;
+        }
+
+        audioStream->pos = streamPosition;
+    }
+}
+
+TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity) {
+
+    if (initialMixerStreamCapacity < 1) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "initialMixerStreamCapacity cannot be less than 1, received value %d", initialMixerStreamCapacity);
+        return NULL;
+    }
+
+    struct TrioAudioDevice* device = calloc(1, sizeof(TrioAudioDevice));
+
+    if (device != NULL) {
+        device->mixer.capacity = initialMixerStreamCapacity;
+        device->mixer.count = 0;
+        device->mixer.streams = malloc(initialMixerStreamCapacity * sizeof(TrioAudioStream*));
+    }
+
+    ma_device_config config = ma_device_config_init(ma_device_type_playback);
+
+    config.playback.format   = ma_format_f32;
+    config.periodSizeInFrames= 256;
+    config.playback.channels = 2;
+    config.sampleRate        = 48000;
+    config.dataCallback      = DataCallback;
+    config.pUserData         = device;
+
+    if (ma_device_init(NULL, &config, &device->device) != MA_SUCCESS) {
+        free(device->mixer.streams);
+        free(device);
+        return NULL;
+    }
+
+    return device;
+}
+
+bool TrioStartAudioDevice(TrioAudioDevice* device) {
+    ma_result result = ma_device_start(&device->device);
+
+    if (result != MA_SUCCESS) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to start audio device with error %s", MAResultToString(result));
+        return false;
+    }
+
+    return true;
+}
+
+TrioAudioBuffer* TrioLoadFlac(const char* path) {
+    drflac* fileptr = drflac_open_file(path, NULL);
+
+    if (!fileptr) {
+
+        char* cwd = getcwd(NULL, 0);
+
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to open FLAC file \"%s\" from working directory \"%s\"", path, cwd);
+
+        if (cwd) free(cwd);
+
+        return NULL;
+    }
+
+    TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
+    if (!buffer) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(TrioAudioBuffer));
+        return NULL;
+    }
+
+    buffer->frameCount = fileptr->totalPCMFrameCount;
+    buffer->channels = fileptr->channels;
+    buffer->sampleRate = fileptr->sampleRate;
+
+    buffer->data = malloc(sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
+    if (!buffer->data) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
+        free(buffer);
+        return NULL;
+    }
+
+    size_t numberOfSamplesActuallyDecoded = drflac_read_pcm_frames_f32(fileptr, fileptr->totalPCMFrameCount, buffer->data);
+
+    return buffer;
+}
+
+TrioAudioBuffer* TrioLoadMp3(const char* path) {
+    drmp3 file;
+    if (!drmp3_init_file(&file, path, NULL)) {
+
+        char* cwd = getcwd(NULL, 0);
+
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise MP3 file \"%s\" from working directory \"%s\"", path, cwd);
+
+        if (cwd) free(cwd);
+
+        return NULL;
+    }
+
+    TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
+    if (!buffer) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(TrioAudioBuffer));
+        drmp3_uninit(&file);
+        return NULL;
+    }
+
+    buffer->frameCount = file.totalPCMFrameCount;
+    buffer->channels = file.channels;
+    buffer->sampleRate = file.sampleRate;
+
+    buffer->data = malloc(sizeof(float) * file.totalPCMFrameCount * file.channels);
+    if (!buffer->data) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(float) * file.totalPCMFrameCount * file.channels);
+        free(buffer);
+        drmp3_uninit(&file);
+        return NULL;
+    }
+
+    size_t numberOfSamplesActuallyDecoded = drmp3_read_pcm_frames_f32(&file, file.totalPCMFrameCount, buffer->data);
+
+    drmp3_uninit(&file);
+
+    return buffer;
+}
+
+TrioAudioBuffer* TrioLoadWav(const char* path) {
+    drwav file;
+    if (!drwav_init_file(&file, path, NULL)) {
+
+        char* cwd = getcwd(NULL, 0);
+
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise WAV file \"%s\" from working directory \"%s\"", path, cwd);
+
+        if (cwd) free(cwd);
+
+        return NULL;
+    }
+
+    TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
+    if (!buffer) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(TrioAudioBuffer));
+        drwav_uninit(&file);
+        return NULL;
+    }
+
+    buffer->frameCount = file.totalPCMFrameCount;
+    buffer->channels = file.channels;
+    buffer->sampleRate = file.sampleRate;
+
+    buffer->data = malloc(sizeof(float) * file.totalPCMFrameCount * file.channels);
+    if (!buffer->data) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(float) * file.totalPCMFrameCount * file.channels);
+        free(buffer);
+        drwav_uninit(&file);
+        return NULL;
+    }
+
+    size_t numberOfSamplesActuallyDecoded = drwav_read_pcm_frames_f32(&file, file.totalPCMFrameCount, buffer->data);
+
+    drwav_uninit(&file);
+
+    return buffer;
+}
+
+TrioAudioStream* TrioCreateAudioStream(TrioAudioBuffer* buffer, bool playImmediately) {
+    TrioAudioStream* stream = malloc(sizeof(TrioAudioStream));
+    if (!stream) {
+        return NULL;
+    }
+
+    stream->buffer = buffer;
+    stream->pos = 0;
+    stream->playing = playImmediately;
+
+    return stream;
+}
+
+void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream) {
+    for (uint32_t i = 0; i < device->mixer.count; i++) {
+        if (device->mixer.streams[i] == audioStream) {
+            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Cannot add the same TrioAudioStream* twice, consider creating a new second TrioAudioStream* with the same TrioAudioBuffer* instead");
+            return;
+        }
+    }
+
+    if (device->mixer.count >= device->mixer.capacity) {
+        device->mixer.capacity *= 2;
+        TrioAudioStream** temp = realloc(device->mixer.streams, device->mixer.capacity * sizeof(TrioAudioStream*));
+        if (temp) {
+            device->mixer.streams = temp;
+        }
+        else {
+            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed reallocate memory (%d Bytes)", device->mixer.capacity * sizeof(TrioAudioStream*));
+            return;
+        }
+    }
+
+    device->mixer.streams[device->mixer.count] = audioStream;
+    device->mixer.count += 1;
+}
+
+void TrioCloseAudioDevice(TrioAudioDevice* device) {
+    ma_device_uninit(&device->device);
+
+    free(device->mixer.streams);
+    free(device);
 }

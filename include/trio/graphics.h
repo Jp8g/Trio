@@ -7,7 +7,7 @@ typedef struct {
     float g;
     float b;
     float a;
-} Color;
+} TrioColor;
 
 #ifdef __cplusplus
 extern "C" {

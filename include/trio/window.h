@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdbool.h>
 #include "../../external/glfw/include/GLFW/glfw3.h"
+#include <stdbool.h>
 
 typedef GLFWwindow TrioWindow;
 
@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 TrioWindow* TrioCreateWindow(const char * Title, int Width, int Height);
-int TrioGetWindowCount();
+uint32_t TrioGetWindowCount();
 void TrioSetCurrentWindow(TrioWindow* window);
 bool TrioWindowShouldClose(TrioWindow* window);
 void TrioCloseWindow(TrioWindow* window);

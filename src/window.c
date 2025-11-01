@@ -1,7 +1,7 @@
 #include "../include/trio/window.h"
 
 bool init = false;
-int windowCount = 0;
+uint32_t windowCount = 0;
 
 TrioWindow* TrioCreateWindow(const char * Title, int Width, int Height) {
     if (!init) {
@@ -16,7 +16,7 @@ TrioWindow* TrioCreateWindow(const char * Title, int Width, int Height) {
     return window;
 }
 
-int TrioGetWindowCount() {
+uint32_t TrioGetWindowCount() {
     return windowCount;
 }
 

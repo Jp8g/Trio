@@ -1,5 +1,7 @@
 #include "../include/trio/log.h"
 
+TrioLogConfig* defaultLogConfig;
+
 const char* TrioLogLevelToString(TrioLogLevel logLevel, bool stylized) {
     if (stylized) {
         switch (logLevel) {
@@ -28,17 +30,71 @@ char* TrioFormatStringVA(const char* fmt, va_list args) {
     va_end(args_copy);
 
     char* buffer = malloc(len + 1);
+    if (!buffer) {
+        fprintf(stderr, "\x1b[31;1m[ERROR]\x1b[0m Failed allocate memory (%d Bytes) CALLER=%s\n", len + 1, __func__);
+        perror(NULL);
+        return NULL;
+    }
+
     vsnprintf(buffer, len + 1, fmt, args);
     return buffer;
 }
 
-void TrioLog(const char* caller, TrioLogLevel logLevel, const char* fmt, ...) {
+TrioLogConfig* TrioGetDefaultLogConfig() {
+    if (!defaultLogConfig) {
+        defaultLogConfig = malloc(sizeof(TrioLogConfig));
+
+        if (!defaultLogConfig) {
+            return NULL;
+        }
+
+        defaultLogConfig->stdoutStylized = true;
+        defaultLogConfig->fileStylized = true;
+        defaultLogConfig->logOutputType = TRIO_STDOUT;
+        defaultLogConfig->logOutputFilePath = NULL;
+    }
+
+    return defaultLogConfig;
+}
+
+void TrioLog(const char* caller, TrioLogConfig* logConfig, TrioLogLevel logLevel, const char* fmt, ...) {
 
     va_list args;
     va_start(args, fmt);
-    char* buffer = TrioFormatStringVA(fmt, args);
+    char* fmtBuffer = TrioFormatStringVA(fmt, args);
+
+    if (!fmtBuffer) {
+        fprintf(stderr, "\x1b[31;1m[ERROR]\x1b[0m Failed to format log message \"%s\" CALLER=%s\n", fmt, __func__);
+        perror(NULL);
+        va_end(args);
+        return;
+    }
+
     va_end(args);
 
-    printf("%s %s CALLER=%s\n", TrioLogLevelToString(logLevel, true), buffer, caller);
-    free(buffer);
+    if (logConfig->logOutputType == TRIO_STDOUT || logConfig->logOutputType == TRIO_STDOUT_AND_FILE) {
+        printf("%s %s CALLER=%s\n", TrioLogLevelToString(logLevel, logConfig->stdoutStylized), fmtBuffer, caller);
+    }
+
+    if (logConfig->logOutputType == TRIO_FILE || logConfig->logOutputType == TRIO_STDOUT_AND_FILE) {
+
+        FILE* fileptr = fopen(logConfig->logOutputFilePath, "a");
+
+        if (fileptr) {
+            if (fprintf(fileptr, "%s %s CALLER=%s\n", TrioLogLevelToString(logLevel, logConfig->fileStylized), fmtBuffer, caller) < 0) {
+                char* cwd = getcwd(NULL, 0);
+                fprintf(stderr, "\x1b[31;1m[ERROR]\x1b[0m Failed to write to file \"%s\" from working directory \"%s\" CALLER=%s\n", logConfig->logOutputFilePath, cwd ? cwd : "UNKNOWN" , __func__);
+                if (cwd) free(cwd);
+                perror(NULL);
+            }
+            fclose(fileptr);
+        } else {
+            char* cwd = getcwd(NULL, 0);
+            fprintf(stderr, "\x1b[31;1m[ERROR]\x1b[0m Failed to open file \"%s\" from working directory \"%s\" CALLER=%s\n", logConfig->logOutputFilePath, cwd ? cwd : "UNKNOWN", __func__);
+            if (cwd) free(cwd);
+            perror(NULL);
+        }
+    }
+
+    free(fmtBuffer);
 }
