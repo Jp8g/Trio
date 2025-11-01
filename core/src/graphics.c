@@ -1,4 +1,4 @@
-#include "../include/trio/graphics.h"
+#include "../include/graphics.h"
 
 void TrioDisplayFrame(TrioWindow* window) {
     glfwSwapBuffers(window);

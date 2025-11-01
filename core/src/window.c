@@ -1,4 +1,4 @@
-#include "../include/trio/window.h"
+#include "../include/window.h"
 
 bool init = false;
 uint32_t windowCount = 0;

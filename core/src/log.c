@@ -1,4 +1,4 @@
-#include "../include/trio/log.h"
+#include "../include/log.h"
 
 TrioLogConfig* defaultLogConfig;
 

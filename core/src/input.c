@@ -1,4 +1,4 @@
-#include "../include/trio/input.h"
+#include "../include/input.h"
 
 void TrioPollEvents() {
     glfwPollEvents();
