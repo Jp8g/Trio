@@ -23,22 +23,15 @@ target_link_libraries(engine PUBLIC
     miniaudio
 )
 
-file(GLOB MODULE_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/modules modules/*)
+file(GLOB_RECURSE ALL_MODULE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/modules/*.c)
 
-foreach(module ${MODULE_DIRS})
-    file(GLOB_RECURSE MODULE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/modules/${module}/src/*.c)
-    if(MODULE_SRC)
-        add_library(trio_module_${module} STATIC ${MODULE_SRC})
-        target_include_directories(trio_module_${module} PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/modules/${module}/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/core/include
-        )
-        target_link_libraries(trio_module_${module} PUBLIC engine)
-        list(APPEND ALL_MODULE_LIBS trio_module_${module})
-    endif()
-endforeach()
+message(STATUS "Module sources: ${ALL_MODULE_SRC}")
 
-if(ALL_MODULE_LIBS)
-    add_library(modules STATIC "")
-    target_link_libraries(modules PUBLIC ${ALL_MODULE_LIBS})
-endif()
+add_library(modules STATIC ${ALL_MODULE_SRC})
+
+target_include_directories(modules PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules
+)
+
+target_link_libraries(modules PUBLIC engine)
