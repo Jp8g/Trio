@@ -134,14 +134,14 @@ void DataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint
     }
 }
 
-TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity) {
+TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity, uint32_t periodSizeInFrames, uint32_t channels, uint32_t sampleRate) {
 
     if (initialMixerStreamCapacity < 1) {
         TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "initialMixerStreamCapacity cannot be less than 1, received value %d", initialMixerStreamCapacity);
         return NULL;
     }
 
-    struct TrioAudioDevice* device = calloc(1, sizeof(TrioAudioDevice));
+    TrioAudioDevice* device = calloc(1, sizeof(TrioAudioDevice));
 
     if (device != NULL) {
         device->mixer.capacity = initialMixerStreamCapacity;
@@ -152,9 +152,9 @@ TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity) {
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
 
     config.playback.format   = ma_format_f32;
-    config.periodSizeInFrames= 256;
-    config.playback.channels = 2;
-    config.sampleRate        = 48000;
+    config.periodSizeInFrames= periodSizeInFrames;
+    config.playback.channels = channels;
+    config.sampleRate        = sampleRate;
     config.dataCallback      = DataCallback;
     config.pUserData         = device;
 
@@ -178,27 +178,20 @@ bool TrioStartAudioDevice(TrioAudioDevice* device) {
     return true;
 }
 
-TrioAudioStream* TrioCreateAudioStream(TrioAudioBuffer* buffer, bool playImmediately) {
-    TrioAudioStream* stream = malloc(sizeof(TrioAudioStream));
+TrioAudioStream* TrioCreateAudioStream(TrioAudioStream* stream, TrioAudioBuffer* buffer, double pos, bool playImmediately) {
     if (!stream) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to create audio stream: stream is null");
         return NULL;
     }
 
     stream->buffer = buffer;
-    stream->pos = 0;
+    stream->pos = pos;
     stream->playing = playImmediately;
 
     return stream;
 }
 
 void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream) {
-    for (uint32_t i = 0; i < device->mixer.count; i++) {
-        if (device->mixer.streams[i] == audioStream) {
-            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Cannot add the same TrioAudioStream* twice, consider creating a new second TrioAudioStream* with the same TrioAudioBuffer* instead");
-            return;
-        }
-    }
-
     if (device->mixer.count >= device->mixer.capacity) {
         device->mixer.capacity *= 2;
         TrioAudioStream** temp = realloc(device->mixer.streams, device->mixer.capacity * sizeof(TrioAudioStream*));
@@ -206,7 +199,7 @@ void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream
             device->mixer.streams = temp;
         }
         else {
-            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed reallocate memory (%d Bytes)", device->mixer.capacity * sizeof(TrioAudioStream*));
+            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed reallocate memory (%d Bytes) for device->mixer.streams", device->mixer.capacity * sizeof(TrioAudioStream*));
             return;
         }
     }

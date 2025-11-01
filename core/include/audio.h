@@ -45,12 +45,9 @@ typedef struct TrioAudioDevice {
 extern "C" {
 #endif
 
-TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity);
+TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity, uint32_t periodSizeInFrames, uint32_t channels, uint32_t sampleRate);
 bool TrioStartAudioDevice(TrioAudioDevice* device);
-TrioAudioBuffer* TrioLoadFlac(const char* path);
-TrioAudioBuffer* TrioLoadMp3(const char* path);
-TrioAudioBuffer* TrioLoadWav(const char* path);
-TrioAudioStream* TrioCreateAudioStream(TrioAudioBuffer* buffer, bool playImmediately);
+TrioAudioStream* TrioCreateAudioStream(TrioAudioStream* stream, TrioAudioBuffer* buffer, double pos, bool playImmediately);
 void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
 void TrioCloseAudioDevice(TrioAudioDevice* device);
 

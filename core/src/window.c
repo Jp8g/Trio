@@ -3,13 +3,13 @@
 bool init = false;
 uint32_t windowCount = 0;
 
-TrioWindow* TrioCreateWindow(const char * Title, int Width, int Height) {
+TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int windowHeight, TrioMonitor* windowMonitor, TrioWindow* windowShare) {
     if (!init) {
         glfwInit();
         init = true;
     }
 
-    TrioWindow* window = glfwCreateWindow(Width, Height, Title, NULL, NULL);
+    TrioWindow* window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, windowMonitor, windowShare);
 
     windowCount += 1;
 
