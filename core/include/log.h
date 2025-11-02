@@ -31,8 +31,10 @@ extern "C" {
 #endif
 
 const char* TrioLogLevelToString(TrioLogLevel logLevel, bool stylized);
+char* TrioGetCurrentWorkingDirectory();
 TrioLogConfig* TrioGetDefaultLogConfig();
 void TrioLog(const char* caller, TrioLogConfig* logConfig, TrioLogLevel logLevel, const char* fmt, ...);
+void TrioShutdownLog();
 
 #ifdef __cplusplus
 }

@@ -1,22 +1,18 @@
+#define DR_FLAC_IMPLEMENTATION
+
 #include "../include/flac_decoder.h"
 
 TrioAudioBuffer* TrioLoadFlac(const char* path) {
     drflac* fileptr = drflac_open_file(path, NULL);
 
     if (!fileptr) {
-
-        char* cwd = getcwd(NULL, 0);
-
-        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to open FLAC file \"%s\" from working directory \"%s\"", path, cwd);
-
-        if (cwd) free(cwd);
-
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to open FLAC file \"%s\" from working directory \"%s\"", path, TrioGetCurrentWorkingDirectory());
         return NULL;
     }
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(TrioAudioBuffer));
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer", (size_t)sizeof(TrioAudioBuffer));
         return NULL;
     }
 
@@ -26,7 +22,7 @@ TrioAudioBuffer* TrioLoadFlac(const char* path) {
 
     buffer->data = malloc(sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
     if (!buffer->data) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes for TrioAudioBuffer PCM data)", (size_t)sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
         free(buffer);
         return NULL;
     }

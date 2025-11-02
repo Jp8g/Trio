@@ -1,21 +1,18 @@
+#define DR_MP3_IMPLEMENTATION
+
 #include "../include/mp3_decoder.h"
 
 TrioAudioBuffer* TrioLoadMp3(const char* path) {
     drmp3 file;
+    
     if (!drmp3_init_file(&file, path, NULL)) {
-
-        char* cwd = getcwd(NULL, 0);
-
-        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise MP3 file \"%s\" from working directory \"%s\"", path, cwd);
-
-        if (cwd) free(cwd);
-
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise MP3 file \"%s\" from working directory \"%s\"", path, TrioGetCurrentWorkingDirectory());
         return NULL;
     }
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(TrioAudioBuffer));
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer", (size_t)sizeof(TrioAudioBuffer));
         drmp3_uninit(&file);
         return NULL;
     }
@@ -26,7 +23,7 @@ TrioAudioBuffer* TrioLoadMp3(const char* path) {
 
     buffer->data = malloc(sizeof(float) * file.totalPCMFrameCount * file.channels);
     if (!buffer->data) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%d Bytes)", sizeof(float) * file.totalPCMFrameCount * file.channels);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes for TrioAudioBuffer PCM data)", (size_t)sizeof(float) * file.totalPCMFrameCount * file.channels);
         free(buffer);
         drmp3_uninit(&file);
         return NULL;

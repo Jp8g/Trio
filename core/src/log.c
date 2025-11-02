@@ -1,6 +1,8 @@
 #include "../include/log.h"
+#include <unistd.h>
 
 TrioLogConfig* defaultLogConfig;
+char* cwd = NULL;
 
 const char* TrioLogLevelToString(TrioLogLevel logLevel, bool stylized) {
     if (stylized) {
@@ -31,13 +33,21 @@ char* TrioFormatStringVA(const char* fmt, va_list args) {
 
     char* buffer = malloc(len + 1);
     if (!buffer) {
-        fprintf(stderr, "\x1b[31;1m[ERROR]\x1b[0m Failed allocate memory (%d Bytes) CALLER=%s\n", len + 1, __func__);
+        fprintf(stderr, "\x1b[31;1m[ERROR]\x1b[0m Failed allocate memory (%d Bytes) for char* buffer CALLER=%s\n", len + 1, __func__);
         perror(NULL);
         return NULL;
     }
 
     vsnprintf(buffer, len + 1, fmt, args);
     return buffer;
+}
+
+char* TrioGetCurrentWorkingDirectory() {
+    if (!cwd) {
+        cwd = getcwd(NULL, 0);
+    }
+    
+    return cwd;
 }
 
 TrioLogConfig* TrioGetDefaultLogConfig() {
@@ -97,4 +107,8 @@ void TrioLog(const char* caller, TrioLogConfig* logConfig, TrioLogLevel logLevel
     }
 
     free(fmtBuffer);
+}
+
+void TrioShutdownLog() {
+    free(cwd);
 }

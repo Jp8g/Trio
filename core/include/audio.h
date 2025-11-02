@@ -7,9 +7,6 @@
 #define MA_DEBUG_OUTPUT
 
 #include "../../external/miniaudio/miniaudio.h"
-#include "../../external/dr-libs/dr_flac.h"
-#include "../../external/dr-libs/dr_mp3.h"
-#include "../../external/dr-libs/dr_wav.h"
 #include "log.h"
 #include <math.h>
 #include <stdbool.h>

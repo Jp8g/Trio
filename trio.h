@@ -4,6 +4,7 @@
 #include "modules/audio/decoders/flac/include/flac_decoder.h"
 #include "modules/audio/decoders/mp3/include/mp3_decoder.h"
 #include "modules/audio/decoders/wav/include/wav_decoder.h"
+#include "modules/audio/decoders/opus/include/opus_decoder.h"
 #include "core/include/audio.h"
 #include "core/include/graphics.h"
 #include "core/include/input.h"

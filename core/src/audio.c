@@ -1,7 +1,3 @@
-#define DR_FLAC_IMPLEMENTATION
-#define DR_MP3_IMPLEMENTATION
-#define DR_WAV_IMPLEMENTATION
-
 #include "../include/audio.h"
 
 const char* MAResultToString(ma_result result)
@@ -143,10 +139,18 @@ TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity, uint32
 
     TrioAudioDevice* device = calloc(1, sizeof(TrioAudioDevice));
 
-    if (device != NULL) {
-        device->mixer.capacity = initialMixerStreamCapacity;
-        device->mixer.count = 0;
-        device->mixer.streams = malloc(initialMixerStreamCapacity * sizeof(TrioAudioStream*));
+    if (!device) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioDevice", sizeof(TrioAudioDevice));
+        return NULL;
+    }
+
+    device->mixer.capacity = initialMixerStreamCapacity;
+    device->mixer.count = 0;
+    device->mixer.streams = malloc(sizeof(TrioAudioStream*) * initialMixerStreamCapacity);
+
+    if (!device->mixer.streams) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioDevice mixer streams", (size_t)sizeof(TrioAudioStream*) * initialMixerStreamCapacity);
+        return NULL;
     }
 
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
@@ -171,7 +175,7 @@ bool TrioStartAudioDevice(TrioAudioDevice* device) {
     ma_result result = ma_device_start(&device->device);
 
     if (result != MA_SUCCESS) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to start audio device with error %s", MAResultToString(result));
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to start AudioDevice: %s", MAResultToString(result));
         return false;
     }
 
@@ -199,7 +203,7 @@ void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream
             device->mixer.streams = temp;
         }
         else {
-            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed reallocate memory (%d Bytes) for device->mixer.streams", device->mixer.capacity * sizeof(TrioAudioStream*));
+            TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed reallocate memory (%zu Bytes) for TrioAudioDevice mixer streams", (size_t)sizeof(TrioAudioStream*) * device->mixer.capacity);
             return;
         }
     }
