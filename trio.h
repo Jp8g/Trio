@@ -9,4 +9,5 @@
 #include "core/include/graphics.h"
 #include "core/include/input.h"
 #include "core/include/log.h"
+#include "core/include/path.h"
 #include "core/include/window.h"

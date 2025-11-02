@@ -3,12 +3,18 @@
 #include "../include/flac_decoder.h"
 
 TrioAudioBuffer* TrioLoadFlac(const char* path) {
-    drflac* fileptr = drflac_open_file(path, NULL);
+
+    char* resolvedPath = TrioResolvePath(path);
+
+    drflac* fileptr = drflac_open_file(resolvedPath, NULL);
 
     if (!fileptr) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to open FLAC file \"%s\" from working directory \"%s\"", path, TrioGetCurrentWorkingDirectory());
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to open FLAC file \"%s\"", resolvedPath);
+        free(resolvedPath);
         return NULL;
     }
+
+    free(resolvedPath);
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {

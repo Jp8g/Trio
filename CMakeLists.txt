@@ -9,6 +9,7 @@ add_library(engine STATIC
     core/src/graphics.c
     core/src/input.c
     core/src/log.c
+    core/src/path.c
     core/src/window.c
 )
 

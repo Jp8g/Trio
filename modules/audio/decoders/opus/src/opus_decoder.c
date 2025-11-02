@@ -3,11 +3,16 @@
 TrioAudioBuffer* TrioLoadOpus(const char* path) {
     int err;
 
-    OggOpusFile* opusFile = op_open_file(path, &err);
+    char* resolvedPath = TrioResolvePath(path);
+
+    OggOpusFile* opusFile = op_open_file(resolvedPath, &err);
     if (!opusFile || err != OPUS_OK) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to open Opus file \"%s\" from working directory \"%s\"", path, TrioGetCurrentWorkingDirectory());
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to open Opus file \"%s\"", resolvedPath);
+        free(resolvedPath);
         return NULL;
     }
+
+    free(resolvedPath);
 
     const OpusHead* opusHead = op_head(opusFile, -1);
     uint64_t total_samples = op_pcm_total(opusFile, -1);

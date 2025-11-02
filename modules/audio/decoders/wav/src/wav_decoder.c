@@ -4,11 +4,16 @@
 
 TrioAudioBuffer* TrioLoadWav(const char* path) {
     drwav file;
+
+    char* resolvedPath = TrioResolvePath(path);
     
-    if (!drwav_init_file(&file, path, NULL)) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise WAV file \"%s\" from working directory \"%s\"", path, TrioGetCurrentWorkingDirectory());
+    if (!drwav_init_file(&file, resolvedPath, NULL)) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise WAV file \"%s\"", resolvedPath);
+        free(resolvedPath);
         return NULL;
     }
+
+    free(resolvedPath);
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {

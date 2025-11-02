@@ -4,11 +4,16 @@
 
 TrioAudioBuffer* TrioLoadMp3(const char* path) {
     drmp3 file;
+
+    char* resolvedPath = TrioResolvePath(path);
     
-    if (!drmp3_init_file(&file, path, NULL)) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise MP3 file \"%s\" from working directory \"%s\"", path, TrioGetCurrentWorkingDirectory());
+    if (!drmp3_init_file(&file, resolvedPath, NULL)) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(),TRIO_ERROR, "Failed to initialise MP3 file \"%s\"", resolvedPath);
+        free(resolvedPath);
         return NULL;
     }
+
+    free(resolvedPath);
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {
