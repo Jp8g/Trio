@@ -17,7 +17,7 @@ TrioAudioBuffer* TrioLoadWav(const char* path) {
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer", (size_t)sizeof(TrioAudioBuffer));
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer (TrioAudioBuffer* buffer)", (size_t)sizeof(TrioAudioBuffer));
         drwav_uninit(&file);
         return NULL;
     }
@@ -28,7 +28,7 @@ TrioAudioBuffer* TrioLoadWav(const char* path) {
 
     buffer->data = malloc(sizeof(float) * file.totalPCMFrameCount * file.channels);
     if (!buffer->data) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes for TrioAudioBuffer PCM data)", (size_t)sizeof(float) * file.totalPCMFrameCount * file.channels);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer PCM data (float* data)", (size_t)sizeof(float) * file.totalPCMFrameCount * file.channels);
         free(buffer);
         drwav_uninit(&file);
         return NULL;

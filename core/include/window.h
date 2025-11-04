@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLFW_INCLUDE_NONE
+
 #include "../../external/glfw/include/GLFW/glfw3.h"
 #include <stdbool.h>
 

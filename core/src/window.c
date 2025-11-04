@@ -1,12 +1,15 @@
 #include "../include/window.h"
 
-bool init = false;
+bool glfwInitialised = false;
 uint32_t windowCount = 0;
 
 TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int windowHeight, TrioMonitor* windowMonitor, TrioWindow* windowShare) {
-    if (!init) {
+    if (!glfwInitialised) {
         glfwInit();
-        init = true;
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwInitialised = true;
     }
 
     TrioWindow* window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, windowMonitor, windowShare);

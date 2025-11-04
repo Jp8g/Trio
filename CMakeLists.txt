@@ -8,8 +8,8 @@ add_library(engine STATIC
     core/src/audio.c
     core/src/graphics.c
     core/src/input.c
+    core/src/io.c
     core/src/log.c
-    core/src/path.c
     core/src/window.c
 )
 
@@ -19,6 +19,7 @@ file(GLOB CHILD_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/external ${CMAKE_CURRE
 
 foreach(EXTERNAL_LIB ${CHILD_DIRS})
     if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/external/${EXTERNAL_LIB}")
+
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/${EXTERNAL_LIB})
         
         if(TARGET ${EXTERNAL_LIB})
@@ -28,9 +29,10 @@ foreach(EXTERNAL_LIB ${CHILD_DIRS})
     endif()
 endforeach()
 
-file(GLOB_RECURSE ALL_MODULE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/modules/*.c)
+file(GLOB_RECURSE ALL_MODULE_SRC_C ${CMAKE_CURRENT_SOURCE_DIR}/modules/*.c)
+file(GLOB_RECURSE ALL_MODULE_SRC_CPP ${CMAKE_CURRENT_SOURCE_DIR}/modules/*.cpp)
 
-add_library(modules STATIC ${ALL_MODULE_SRC})
+add_library(modules STATIC ${ALL_MODULE_SRC_C} ${ALL_MODULE_SRC_CPP})
 
 target_include_directories(modules PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core/include

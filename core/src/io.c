@@ -1,40 +1,25 @@
-#include "../include/path.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "../include/io.h"
 
 char* TrioGetExePath() {
     int len = wai_getExecutablePath(NULL, 0, NULL);
     char* path = (char*)malloc(len + 1);
-    wai_getExecutablePath(path, len, NULL);
+    wai_getExecutablePath(path, len + 1, NULL);
     path[len] = '\0';
 
     return path;
 }
 
 char* TrioGetParentDir(const char* path) {
-    if (!path || !*path)
-        return strdup("../");
+    char* pathCopy = strdup(path);
+    if (!pathCopy) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to duplicate string");
+        return NULL;
+    }
 
-    char* parentDir = strdup(path);
-    size_t len = strlen(parentDir);
+    char* parent = dirname(pathCopy);
+    char* result = strdup(parent);
 
-    if (len > 0 && parentDir[len - 1] == '/')
-        parentDir[--len] = '\0';
-
-    char* slash = strrchr(parentDir, '/');
-    if (slash)
-        *slash = '\0';
-    else
-        parentDir[0] = '\0';
-
-    size_t newLen = strlen(parentDir);
-    char* result = malloc(newLen + 2);
-    strcpy(result, parentDir);
-    result[newLen] = '/';
-    result[newLen + 1] = '\0';
-
-    free(parentDir);
+    free(pathCopy);
     return result;
 }
 
@@ -45,7 +30,6 @@ char* TrioGetExeDir() {
 
     return path;
 }
-
 
 char* TrioResolvePath(const char* path) {
     char* exeDir = TrioGetExeDir();

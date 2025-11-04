@@ -18,7 +18,7 @@ TrioAudioBuffer* TrioLoadFlac(const char* path) {
 
     TrioAudioBuffer* buffer = malloc(sizeof(TrioAudioBuffer));
     if (!buffer) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer", (size_t)sizeof(TrioAudioBuffer));
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer (TrioAudioBuffer* buffer)", (size_t)sizeof(TrioAudioBuffer));
         return NULL;
     }
 
@@ -28,7 +28,7 @@ TrioAudioBuffer* TrioLoadFlac(const char* path) {
 
     buffer->data = malloc(sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
     if (!buffer->data) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes for TrioAudioBuffer PCM data)", (size_t)sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer PCM data (float* data)", (size_t)sizeof(float) * fileptr->totalPCMFrameCount * fileptr->channels);
         free(buffer);
         return NULL;
     }

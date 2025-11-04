@@ -18,12 +18,18 @@ TrioAudioBuffer* TrioLoadOpus(const char* path) {
     uint64_t total_samples = op_pcm_total(opusFile, -1);
 
     TrioAudioBuffer* audioBuffer = malloc(sizeof(TrioAudioBuffer));
+    if (!audioBuffer) {
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer (TrioAudioBuffer* buffer)", (size_t)sizeof(TrioAudioBuffer));
+        op_free(opusFile);
+        return NULL;
+    }
+
     audioBuffer->data = malloc(sizeof(float) * total_samples * opusHead->channel_count);
     audioBuffer->channels = opusHead->channel_count;
     audioBuffer->sampleRate = 48000;
 
     if (!audioBuffer->data) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for Opus PCM data", (size_t)sizeof(float) * total_samples * opusHead->channel_count);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioBuffer PCM data (float* data)", (size_t)sizeof(float) * total_samples * opusHead->channel_count);
         op_free(opusFile);
         return NULL;
     }
