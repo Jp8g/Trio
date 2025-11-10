@@ -45,7 +45,10 @@ extern "C" {
 TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity, uint32_t periodSizeInFrames, uint32_t channels, uint32_t sampleRate);
 bool TrioStartAudioDevice(TrioAudioDevice* device);
 TrioAudioStream* TrioCreateAudioStream(TrioAudioStream* stream, TrioAudioBuffer* buffer, double pos, bool playImmediately);
-void TrioAddStreamToDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
+void TrioAddAudioStreamToAudioDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
+void TrioRemoveAudioStreamFromAudioDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
+void TrioDeleteAudioStream(TrioAudioStream* audioStream);
+void TrioDeleteAudioBuffer(TrioAudioBuffer* audioBuffer);
 void TrioCloseAudioDevice(TrioAudioDevice* device);
 
 #ifdef __cplusplus

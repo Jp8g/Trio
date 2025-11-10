@@ -32,7 +32,9 @@ bool TrioWindowShouldClose(TrioWindow* window) {
 }
 
 void TrioCloseWindow(TrioWindow* window) {
-    glfwDestroyWindow(window);
+    if (window) {
+        glfwDestroyWindow(window);
 
-    windowCount -= 1;
+        windowCount -= 1;
+    }
 }

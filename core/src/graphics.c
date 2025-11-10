@@ -1,6 +1,7 @@
 #include "../include/graphics.h"
 
 bool openGLInit = false;
+static uint32_t currentShaderProgram = 0;
 
 void FramebufferSizeCallback(TrioWindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -13,6 +14,32 @@ void TrioInitGraphics(TrioWindow* window) {
     }
 
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+}
+
+uint32_t TrioCreateVAO() {
+    uint32_t VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    return VAO;
+}
+
+uint32_t TrioCreateVBO(float* vertices, uint32_t size, TrioBufferObjectUsage drawMode) {
+    uint32_t VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, size, vertices, drawMode);
+
+    return VBO;
+}
+
+uint32_t TrioCreateEBO(uint32_t* indices, uint32_t size, TrioBufferObjectUsage drawMode) {
+    uint32_t EBO;
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, drawMode);
+
+    return EBO;
 }
 
 uint32_t TrioCompileShader(const char* path, TrioShaderType shaderType) {
@@ -99,6 +126,66 @@ uint32_t TrioCompileShader(const char* path, TrioShaderType shaderType) {
     }
 
     return shader;
+}
+
+uint32_t TrioCreateShaderProgram(uint32_t vertexShader, uint32_t fragmentShader) {
+    uint32_t shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    int success;
+    glad_glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to link shader program: \"%s\"", infoLog);
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return shaderProgram;
+}
+
+void TrioVertexAttributePointer(uint8_t index, uint32_t size, TrioVertexFormat vertexFormat, bool normalized, uint32_t stride, uintptr_t strideOffset) {
+    glVertexAttribPointer(index, size, vertexFormat, GL_FALSE, stride, (void*)strideOffset);
+    glEnableVertexAttribArray(index);
+}
+
+void TrioClearColor(float red, float green, float blue, float alpha) {
+    glClearColor(red, green, blue, alpha);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void TrioUseShaderProgram(uint32_t shaderProgram) {
+    glUseProgram(shaderProgram);
+    currentShaderProgram = shaderProgram;
+}
+
+int32_t TrioGetUniformLocation(uint32_t shaderProgram, const char* uniformName) {
+    if (shaderProgram != currentShaderProgram) {
+        TrioUseShaderProgram(shaderProgram);
+    }
+
+    return glGetUniformLocation(shaderProgram, uniformName);
+}
+
+void TrioSetUniform3f(uint32_t shaderProgram, int32_t location, float v0, float v1, float v2) {
+    if (shaderProgram != currentShaderProgram) {
+        TrioUseShaderProgram(shaderProgram);
+    }
+
+    glUniform3f(location, v0, v1, v2);
+}
+
+void TrioDrawElements(uint32_t shaderProgram, TrioDrawMode drawMode, uint32_t count, TrioVertexFormat vertexFormat, uint32_t offset) {
+    if (shaderProgram != currentShaderProgram) {
+        TrioUseShaderProgram(shaderProgram);
+    }
+
+    glDrawElements(drawMode, count, vertexFormat, (void*)(offset * sizeof(uint32_t)));
 }
 
 void TrioDisplayFrame(TrioWindow* window) {
