@@ -1,9 +1,12 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "../include/graphics.h"
 
 bool openGLInit = false;
 static uint32_t currentShaderProgram = 0;
 
 void FramebufferSizeCallback(TrioWindow* window, int width, int height) {
+    glfwMakeContextCurrent(window);
     glViewport(0, 0, width, height);
 }
 
@@ -16,7 +19,7 @@ void TrioInitGraphics(TrioWindow* window) {
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 }
 
-uint32_t TrioCreateVAO() {
+uint32_t TrioCreateVAO(void) {
     uint32_t VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
@@ -40,6 +43,22 @@ uint32_t TrioCreateEBO(uint32_t* indices, uint32_t size, TrioBufferObjectUsage d
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, drawMode);
 
     return EBO;
+}
+
+
+uint32_t TrioCreateTexture(uint32_t width, uint32_t height, TrioImage* imageData) {
+    uint32_t texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    return texture;
 }
 
 uint32_t TrioCompileShader(const char* path, TrioShaderType shaderType) {
@@ -150,7 +169,7 @@ uint32_t TrioCreateShaderProgram(uint32_t vertexShader, uint32_t fragmentShader)
 }
 
 void TrioVertexAttributePointer(uint8_t index, uint32_t size, TrioVertexFormat vertexFormat, bool normalized, uint32_t stride, uintptr_t strideOffset) {
-    glVertexAttribPointer(index, size, vertexFormat, GL_FALSE, stride, (void*)strideOffset);
+    glVertexAttribPointer(index, size, vertexFormat, normalized, stride, (void*)strideOffset);
     glEnableVertexAttribArray(index);
 }
 

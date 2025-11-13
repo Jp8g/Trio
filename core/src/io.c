@@ -1,6 +1,6 @@
 #include "../include/io.h"
 
-char* TrioGetExePath() {
+char* TrioGetExePath(void) {
     int len = wai_getExecutablePath(NULL, 0, NULL);
     char* path = (char*)malloc(len + 1);
     wai_getExecutablePath(path, len + 1, NULL);
@@ -23,7 +23,7 @@ char* TrioGetParentDir(const char* path) {
     return result;
 }
 
-char* TrioGetExeDir() {
+char* TrioGetExeDir(void) {
     char* exePath = TrioGetExePath();
     char* path = TrioGetParentDir(exePath);
     free(exePath);

@@ -7,6 +7,7 @@
 #define MA_DEBUG_OUTPUT
 
 #include "../../external/miniaudio/miniaudio.h"
+#include "../../external/libsoundio/soundio/soundio.h"
 #include "log.h"
 #include <math.h>
 #include <stdbool.h>

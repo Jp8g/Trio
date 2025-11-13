@@ -3,6 +3,7 @@
 #include "io.h"
 #include "window.h"
 #include "../../external/glad/include/glad/glad.h"
+#include "../stb_image.h"
 
 typedef struct TrioColor {
     float r;
@@ -48,6 +49,8 @@ typedef enum TrioDrawMode {
     TRIANGLE_FAN,
 } TrioDrawMode;
 
+typedef unsigned char TrioImage;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,6 +59,7 @@ void TrioInitGraphics(TrioWindow* window);
 uint32_t TrioCreateVAO();
 uint32_t TrioCreateVBO(float* vertices, uint32_t size, TrioBufferObjectUsage drawMode);
 uint32_t TrioCreateEBO(uint32_t* indices, uint32_t size, TrioBufferObjectUsage drawMode);
+uint32_t TrioCreateTexture(uint32_t width, uint32_t height, TrioImage* imageData);
 uint32_t TrioCompileShader(const char* path, TrioShaderType shaderType);
 void TrioVertexAttributePointer(uint8_t index, uint32_t size, TrioVertexFormat vertexFormat, bool normalized, uint32_t stride, uintptr_t strideOffset);
 uint32_t TrioCreateShaderProgram(uint32_t vertexShader, uint32_t fragmentShader);

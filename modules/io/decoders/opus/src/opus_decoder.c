@@ -5,9 +5,12 @@ TrioAudioBuffer* TrioLoadOpus(const char* path) {
 
     char* resolvedPath = TrioResolvePath(path);
 
+
     OggOpusFile* opusFile = op_open_file(resolvedPath, &err);
     if (!opusFile || err != OPUS_OK) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to open Opus file \"%s\"", resolvedPath);
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to open Opus file \"%s\", external/opusfile ERR:%d", resolvedPath, err);
+        
+        return NULL;
         free(resolvedPath);
         return NULL;
     }

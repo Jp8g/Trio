@@ -1,4 +1,5 @@
 #include "../include/audio.h"
+
 const char* MAResultToString(ma_result result)
 {
     switch(result) {
@@ -197,11 +198,11 @@ TrioAudioStream* TrioCreateAudioStream(TrioAudioStream* audioStream, TrioAudioBu
 void TrioAddAudioStreamToAudioDevice(TrioAudioDevice* audioDevice, TrioAudioStream* audioStream) {
     if (audioDevice->mixer.count >= audioDevice->mixer.capacity) {
         audioDevice->mixer.capacity *= 2;
+
         TrioAudioStream** temp = realloc(audioDevice->mixer.streams, audioDevice->mixer.capacity * sizeof(TrioAudioStream*));
         if (temp) {
             audioDevice->mixer.streams = temp;
-        }
-        else {
+        } else {
             TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed reallocate memory (%zu Bytes) for TrioAudioDevice mixer streams", (size_t)sizeof(TrioAudioStream*) * audioDevice->mixer.capacity);
             return;
         }
@@ -214,8 +215,9 @@ void TrioAddAudioStreamToAudioDevice(TrioAudioDevice* audioDevice, TrioAudioStre
 void TrioRemoveAudioStreamFromAudioDevice(TrioAudioDevice* audioDevice, TrioAudioStream* audioStream) {
     for (uint32_t i = 0; i < audioDevice->mixer.count; i++) {
         if (audioDevice->mixer.streams[i] == audioStream) {
-            audioDevice->mixer.streams[i] = NULL;
+            audioDevice->mixer.streams[i] = audioDevice->mixer.streams[audioDevice->mixer.count - 1];
             audioDevice->mixer.count -= 1;
+            return;
         }
     }
 }

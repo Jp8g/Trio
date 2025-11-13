@@ -13,7 +13,7 @@ add_library(engine STATIC
     core/src/window.c
 )
 
-target_include_directories(engine PUBLIC core/include)
+target_compile_options(engine PRIVATE -Wall -Wextra -pedantic)
 
 file(GLOB CHILD_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/external ${CMAKE_CURRENT_SOURCE_DIR}/external/*)
 
@@ -39,4 +39,5 @@ target_include_directories(modules PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/modules
 )
 
+target_include_directories(engine PUBLIC core/include)
 target_link_libraries(modules PUBLIC engine)

@@ -1,4 +1,5 @@
 #include "../include/window.h"
+#include "GLFW/glfw3.h"
 
 bool glfwInitialised = false;
 uint32_t windowCount = 0;
@@ -19,12 +20,16 @@ TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int wind
     return window;
 }
 
-uint32_t TrioGetWindowCount() {
+uint32_t TrioGetWindowCount(void) {
     return windowCount;
 }
 
 void TrioSetCurrentWindow(TrioWindow* window) {
     glfwMakeContextCurrent(window);
+}
+
+void TrioSetSwapInterval(int32_t interval) {
+    glfwSwapInterval(interval);
 }
 
 bool TrioWindowShouldClose(TrioWindow* window) {
