@@ -1,19 +1,13 @@
 #pragma once
 
-#define MA_NO_ENGINE
-#define MA_NO_NODE_GRAPH
-#define MA_NO_DECODING
-#define MA_NO_ENCODING
-#define MA_DEBUG_OUTPUT
-
-#include "../../external/miniaudio/miniaudio.h"
-#include "../../external/libsoundio/soundio/soundio.h"
+#include "../../external/libsoundio_static/soundio/soundio.h"
 #include "log.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <unistd.h>
+
+typedef struct SoundIo TrioAudioContext;
 
 typedef struct TrioAudioBuffer {
     float* data;
@@ -35,7 +29,7 @@ typedef struct TrioMixer {
 } TrioMixer;
 
 typedef struct TrioAudioDevice {
-    ma_device device;
+    struct SoundIoDevice* device;
     TrioMixer mixer;
 } TrioAudioDevice;
 
@@ -43,8 +37,9 @@ typedef struct TrioAudioDevice {
 extern "C" {
 #endif
 
-TrioAudioDevice* TrioInitAudioDevice(uint32_t initialMixerStreamCapacity, uint32_t periodSizeInFrames, uint32_t channels, uint32_t sampleRate);
-bool TrioStartAudioDevice(TrioAudioDevice* device);
+TrioAudioContext* TrioCreateAudioContext(void);
+int32_t TrioGetDefaultAudioOutputDeviceIndex(TrioAudioContext* audioContext);
+TrioAudioDevice* TrioCreateAudioDevice(TrioAudioContext* audioContext, int32_t deviceIndex, uint32_t initialMixerStreamCapacity);
 TrioAudioStream* TrioCreateAudioStream(TrioAudioStream* stream, TrioAudioBuffer* buffer, double pos, bool playImmediately);
 void TrioAddAudioStreamToAudioDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);
 void TrioRemoveAudioStreamFromAudioDevice(TrioAudioDevice* device, TrioAudioStream* audioStream);

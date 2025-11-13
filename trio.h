@@ -9,6 +9,6 @@
 #include "core/include/audio.h"
 #include "core/include/graphics.h"
 #include "core/include/input.h"
-#include "core/include/io.h"
 #include "core/include/log.h"
 #include "core/include/window.h"
+#include "core/include/io.h"

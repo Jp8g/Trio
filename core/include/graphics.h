@@ -3,7 +3,7 @@
 #include "io.h"
 #include "window.h"
 #include "../../external/glad/include/glad/glad.h"
-#include "../stb_image.h"
+#include "../../external/stb_image.h"
 
 typedef struct TrioColor {
     float r;
