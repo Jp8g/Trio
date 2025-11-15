@@ -1,9 +1,9 @@
 #include "../include/input.h"
 
 void TrioPollEvents() {
-    glfwPollEvents();
+    RGFW_pollEvents();
 }
 
 bool TrioIsKeyPressed(TrioWindow* window, TrioKey key) {
-    return glfwGetKey(window, key) == 1;
+    return RGFW_window_isKeyDown(window, key) == 1;
 }

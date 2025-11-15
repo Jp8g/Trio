@@ -1,18 +1,17 @@
 #pragma once
 
-#define GLFW_INCLUDE_NONE
+#define RGFW_OPENGL
 
-#include "../../external/glfw/include/GLFW/glfw3.h"
+#include "../../external/rgfw/RGFW.h"
 #include <stdbool.h>
 
-typedef GLFWwindow TrioWindow;
-typedef GLFWmonitor TrioMonitor;
+typedef RGFW_window TrioWindow;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int windowHeight, TrioMonitor* windowMonitor, TrioWindow* windowShare);
+TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int windowHeight);
 uint32_t TrioGetWindowCount();
 void TrioSetCurrentWindow(TrioWindow* window);
 bool TrioWindowShouldClose(TrioWindow* window);

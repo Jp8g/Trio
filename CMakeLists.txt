@@ -13,11 +13,15 @@ add_library(engine STATIC
     core/src/window.c
 )
 
-target_compile_options(engine PRIVATE -Wall -Wextra -pedantic)
+#target_compile_options(engine PRIVATE -Wall -Wextra -pedantic)
 
 file(GLOB CHILD_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/external ${CMAKE_CURRENT_SOURCE_DIR}/external/*)
 
 foreach(EXTERNAL_LIB ${CHILD_DIRS})
+    if (EXTERNAL_LIB STREQUAL "rgfw")
+        continue()
+    endif()
+
     if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/external/${EXTERNAL_LIB}")
 
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/${EXTERNAL_LIB})
@@ -41,3 +45,12 @@ target_include_directories(modules PUBLIC
 
 target_include_directories(engine PUBLIC core/include)
 target_link_libraries(modules PUBLIC engine)
+
+find_package(X11 REQUIRED)
+
+target_link_libraries(engine PRIVATE
+    ${X11_LIBRARIES}
+    Xrandr
+    xkbfile
+    GL
+)

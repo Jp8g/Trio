@@ -68,7 +68,6 @@ TrioLogConfig* TrioGetDefaultLogConfig() {
 }
 
 void TrioLog(const char* caller, TrioLogConfig* logConfig, TrioLogLevel logLevel, const char* fmt, ...) {
-
     va_list args;
     va_start(args, fmt);
     char* fmtBuffer = TrioFormatStringVA(fmt, args);

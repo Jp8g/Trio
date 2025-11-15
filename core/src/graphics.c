@@ -4,19 +4,13 @@
 
 bool openGLInit = false;
 static uint32_t currentShaderProgram = 0;
-
-void FramebufferSizeCallback(TrioWindow* window, int width, int height) {
-    glfwMakeContextCurrent(window);
-    glViewport(0, 0, width, height);
-}
+static uint8_t activeTexture = 0;
 
 void TrioInitGraphics(TrioWindow* window) {
     if (!openGLInit) {
         gladLoadGL();
         openGLInit = true;
     }
-
-    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 }
 
 uint32_t TrioCreateVAO(void) {
@@ -179,34 +173,84 @@ void TrioClearColor(float red, float green, float blue, float alpha) {
 }
 
 void TrioUseShaderProgram(uint32_t shaderProgram) {
-    glUseProgram(shaderProgram);
-    currentShaderProgram = shaderProgram;
+    if (shaderProgram != currentShaderProgram) {
+        glUseProgram(shaderProgram);
+        currentShaderProgram = shaderProgram;
+    }
 }
 
 int32_t TrioGetUniformLocation(uint32_t shaderProgram, const char* uniformName) {
-    if (shaderProgram != currentShaderProgram) {
-        TrioUseShaderProgram(shaderProgram);
-    }
-
+    TrioUseShaderProgram(shaderProgram);
     return glGetUniformLocation(shaderProgram, uniformName);
 }
 
+void TrioSetUniform1f(uint32_t shaderProgram, int32_t location, float v0) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform1f(location, v0);
+}
+
+void TrioSetUniform2f(uint32_t shaderProgram, int32_t location, float v0, float v1) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform2f(location, v0, v1);
+}
+
 void TrioSetUniform3f(uint32_t shaderProgram, int32_t location, float v0, float v1, float v2) {
-    if (shaderProgram != currentShaderProgram) {
-        TrioUseShaderProgram(shaderProgram);
-    }
+    TrioUseShaderProgram(shaderProgram);
 
     glUniform3f(location, v0, v1, v2);
 }
 
-void TrioDrawElements(uint32_t shaderProgram, TrioDrawMode drawMode, uint32_t count, TrioVertexFormat vertexFormat, uint32_t offset) {
-    if (shaderProgram != currentShaderProgram) {
-        TrioUseShaderProgram(shaderProgram);
+void TrioSetUniform4f(uint32_t shaderProgram, int32_t location, float v0, float v1, float v2, float v3) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform4f(location, v0, v1, v2, v3);
+}
+
+void TrioSetUniform1i(uint32_t shaderProgram, int32_t location, int v0) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform1i(location, v0);
+}
+
+void TrioSetUniform2i(uint32_t shaderProgram, int32_t location, int v0, int v1) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform2i(location, v0, v1);
+}
+
+void TrioSetUniform3i(uint32_t shaderProgram, int32_t location, int v0, int v1, int v2) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform3i(location, v0, v1, v2);
+}
+
+void TrioSetUniform4i(uint32_t shaderProgram, int32_t location, int v0, int v1, int v2, int v3) {
+    TrioUseShaderProgram(shaderProgram);
+
+    glUniform4i(location, v0, v1, v2, v3);
+}
+
+void TrioSetActiveTexture(uint8_t textureIndex) {
+    if (activeTexture != textureIndex) {
+        glActiveTexture(0x84C0 + textureIndex);
+        activeTexture = textureIndex;
     }
+}
+
+void TrioBindTexture(uint32_t shaderProgram, uint8_t textureIndex, TrioTextureType textureType, uint32_t texture) {
+    TrioUseShaderProgram(shaderProgram);
+    TrioSetActiveTexture(textureIndex);
+    glBindTexture(textureType, texture);
+}
+
+void TrioDrawElements(uint32_t shaderProgram, TrioDrawMode drawMode, uint32_t count, TrioVertexFormat vertexFormat, uint32_t offset) {
+    TrioUseShaderProgram(shaderProgram);
 
     glDrawElements(drawMode, count, vertexFormat, (void*)(offset * sizeof(uint32_t)));
 }
 
 void TrioDisplayFrame(TrioWindow* window) {
-    glfwSwapBuffers(window);
+    RGFW_window_swapBuffers_OpenGL(window);
 }

@@ -24,20 +24,31 @@ typedef enum TrioShaderType {
 } TrioShaderType;
 
 typedef enum TrioVertexFormat {
-    BYTE = 0x1400,
-    UNSIGNED_BYTE = 0x1401,
-    SHORT = 0x1402,
-    UNSIGNED_SHORT = 0x1403,
-    INT = 0x1404,
-    UNSIGNED_INT = 0x1405,
-    FLOAT = 0x1406,
+    TRIO_BYTE = GL_BYTE,
+    TRIO_UNSIGNED_BYTE = GL_UNSIGNED_BYTE,
+    TRIO_SHORT = GL_SHORT,
+    TRIO_UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
+    TRIO_INT = GL_INT,
+    TRIO_UNSIGNED_INT = GL_UNSIGNED_INT,
+    TRIO_FLOAT = GL_FLOAT,
 } TrioVertexFormat;
 
 typedef enum TrioBufferObjectUsage {
-    USAGE_STREAM = 0x88E0,
-    USAGE_STATIC = 0x88E4,
-    USAGE_DYNAMIC = 0x88E8,
+    TRIO_USAGE_STREAM = GL_STREAM_DRAW,
+    TRIO_USAGE_STATIC = GL_STATIC_DRAW,
+    TRIO_USAGE_DYNAMIC = GL_DYNAMIC_DRAW,
 } TrioBufferObjectUsage;
+
+typedef enum TrioTextureType {
+    TRIO_TEXTURE_1D = GL_TEXTURE_1D,
+    TRIO_TEXTURE_1D_ARRAY = GL_TEXTURE_1D_ARRAY,
+    TRIO_TEXTURE_2D = GL_TEXTURE_2D,
+    TRIO_TEXTURE_2D_ARRAY = GL_TEXTURE_2D_ARRAY,
+    TRIO_TEXTURE_3D = GL_TEXTURE_3D,
+    TRIO_TEXTURE_CUBEMAP = GL_TEXTURE_CUBE_MAP,
+    TRIO_TEXTURE_RECTANGLE = GL_TEXTURE_RECTANGLE,
+    TRIO_TEXTURE_BUFFER = GL_TEXTURE_BUFFER,
+} TrioTextureType;
 
 typedef enum TrioDrawMode {
     POINTS,
@@ -66,7 +77,20 @@ uint32_t TrioCreateShaderProgram(uint32_t vertexShader, uint32_t fragmentShader)
 void TrioClearColor(float red, float green, float blue, float alpha);
 void TrioUseShaderProgram(uint32_t shaderProgram);
 int32_t TrioGetUniformLocation(uint32_t shaderProgram, const char* uniformName);
+
+void TrioSetUniform1f(uint32_t shaderProgram, int32_t location, float v0);
+void TrioSetUniform2f(uint32_t shaderProgram, int32_t location, float v0, float v1);
 void TrioSetUniform3f(uint32_t shaderProgram, int32_t location, float v0, float v1, float v2);
+void TrioSetUniform4f(uint32_t shaderProgram, int32_t location, float v0, float v1, float v2, float v3);
+
+void TrioSetUniform1i(uint32_t shaderProgram, int32_t location, int v0);
+void TrioSetUniform2i(uint32_t shaderProgram, int32_t location, int v0, int v1);
+void TrioSetUniform3i(uint32_t shaderProgram, int32_t location, int v0, int v1, int v2);
+void TrioSetUniform4i(uint32_t shaderProgram, int32_t location, int v0, int v1, int v2, int v3);
+
+void TrioSetActiveTexture(uint8_t textureIndex);
+void TrioBindTexture(uint32_t shaderProgram, uint8_t textureIndex, TrioTextureType textureType, uint32_t texture);
+
 void TrioDrawElements(uint32_t shaderProgram, TrioDrawMode drawMode, uint32_t count, TrioVertexFormat vertexFormat, uint32_t offset);
 void TrioDisplayFrame(TrioWindow* window);
 

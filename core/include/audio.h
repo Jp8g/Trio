@@ -5,7 +5,6 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <unistd.h>
 
 typedef struct SoundIo TrioAudioContext;
 
@@ -30,6 +29,7 @@ typedef struct TrioMixer {
 
 typedef struct TrioAudioDevice {
     struct SoundIoDevice* device;
+    struct SoundIoOutStream* outStream;
     TrioMixer mixer;
 } TrioAudioDevice;
 
@@ -46,6 +46,7 @@ void TrioRemoveAudioStreamFromAudioDevice(TrioAudioDevice* device, TrioAudioStre
 void TrioDeleteAudioStream(TrioAudioStream* audioStream);
 void TrioDeleteAudioBuffer(TrioAudioBuffer* audioBuffer);
 void TrioCloseAudioDevice(TrioAudioDevice* device);
+void TrioCloseAudioContext(TrioAudioContext* context);
 
 #ifdef __cplusplus
 }

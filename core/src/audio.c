@@ -1,4 +1,6 @@
 #include "../include/audio.h"
+#include "log.h"
+#include <pthread.h>
 
 void writeCallback(struct SoundIoOutStream* soundioOutStream, int frameCountMin, int frameCountMax) {
     const struct SoundIoChannelLayout *layout = &soundioOutStream->layout;
@@ -85,8 +87,10 @@ void writeCallback(struct SoundIoOutStream* soundioOutStream, int frameCountMin,
     }
 }
 
+void errorCallback(struct SoundIoOutStream* outStream, int err) {} //Literally why does Libsoundio break for no reason? (Dummy callback to avoid default abort)
+
 TrioAudioContext* TrioCreateAudioContext(void) {
-    struct SoundIo *audioContext = soundio_create();
+    TrioAudioContext* audioContext = soundio_create();
 
     if (!audioContext) {
         TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to create audio context");
@@ -150,24 +154,24 @@ TrioAudioDevice* TrioCreateAudioDevice(TrioAudioContext* audioContext, int32_t d
 
     audioDevice->device = soundioDevice;
 
-    struct SoundIoOutStream *outstream = soundio_outstream_create(soundioDevice);
-    outstream->format = SoundIoFormatFloat32NE;
-    outstream->write_callback = writeCallback;
-    outstream->userdata = audioDevice;
+    struct SoundIoOutStream *outStream = soundio_outstream_create(soundioDevice);
+    outStream->userdata = audioDevice;
+    outStream->write_callback = writeCallback;
+    outStream->error_callback = errorCallback;
 
-    int32_t err = soundio_outstream_open(outstream);
+    int32_t err = soundio_outstream_open(outStream);
 
     if (err) {
         fprintf(stderr, "unable to open device: %s", soundio_strerror(err));
         return NULL;
     }
 
-    if (outstream->layout_error) {
-        fprintf(stderr, "unable to set channel layout: %s\n", soundio_strerror(outstream->layout_error));
+    if (outStream->layout_error) {
+        fprintf(stderr, "unable to set channel layout: %s\n", soundio_strerror(outStream->layout_error));
         return NULL;
     }
 
-    err = soundio_outstream_start(outstream);
+    err = soundio_outstream_start(outStream);
 
     if (err) {
         fprintf(stderr, "unable to start device: %s", soundio_strerror(err));
@@ -178,8 +182,9 @@ TrioAudioDevice* TrioCreateAudioDevice(TrioAudioContext* audioContext, int32_t d
 }
 
 TrioAudioStream* TrioCreateAudioStream(TrioAudioStream* audioStream, TrioAudioBuffer* audioBuffer, double pos, bool playImmediately) {
+    audioStream = malloc(sizeof(TrioAudioStream));
     if (!audioStream) {
-        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed to create audio stream: stream is null");
+        TrioLog(__func__, TrioGetDefaultLogConfig(), TRIO_ERROR, "Failed allocate memory (%zu Bytes) for TrioAudioDevice mixer streams", sizeof(TrioAudioStream));
         return NULL;
     }
 
@@ -235,6 +240,7 @@ void TrioDeleteAudioBuffer(TrioAudioBuffer* audioBuffer) {
 
 void TrioCloseAudioDevice(TrioAudioDevice* audioDevice) {
     if (audioDevice) {
+        soundio_outstream_destroy(audioDevice->outStream);
         soundio_device_unref(audioDevice->device);
 
         free(audioDevice->mixer.streams);

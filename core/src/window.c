@@ -1,19 +1,14 @@
+#define RGFW_IMPLEMENTATION
+
 #include "../include/window.h"
-#include "GLFW/glfw3.h"
 
 bool glfwInitialised = false;
 uint32_t windowCount = 0;
 
-TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int windowHeight, TrioMonitor* windowMonitor, TrioWindow* windowShare) {
-    if (!glfwInitialised) {
-        glfwInit();
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwInitialised = true;
-    }
+TrioWindow* TrioCreateWindow(const char * windowTitle, int windowWidth, int windowHeight) {
 
-    TrioWindow* window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, windowMonitor, windowShare);
+
+    RGFW_window* window = RGFW_createWindow(windowTitle, 0, 0, windowWidth, windowHeight, RGFW_windowCenter | RGFW_windowOpenGL);
 
     windowCount += 1;
 
@@ -24,21 +19,13 @@ uint32_t TrioGetWindowCount(void) {
     return windowCount;
 }
 
-void TrioSetCurrentWindow(TrioWindow* window) {
-    glfwMakeContextCurrent(window);
-}
-
-void TrioSetSwapInterval(int32_t interval) {
-    glfwSwapInterval(interval);
-}
-
 bool TrioWindowShouldClose(TrioWindow* window) {
-    return glfwWindowShouldClose(window) == 1;
+    return RGFW_window_shouldClose(window) == RGFW_TRUE;
 }
 
 void TrioCloseWindow(TrioWindow* window) {
     if (window) {
-        glfwDestroyWindow(window);
+        RGFW_window_close(window);
 
         windowCount -= 1;
     }
