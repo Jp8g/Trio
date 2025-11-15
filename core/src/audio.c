@@ -247,3 +247,7 @@ void TrioCloseAudioDevice(TrioAudioDevice* audioDevice) {
         free(audioDevice);
     }
 }
+
+void TrioCloseAudioContext(TrioAudioContext* context) {
+    soundio_destroy(context);
+}
